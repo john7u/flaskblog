@@ -8,6 +8,10 @@ flask = "*"
 flask-mail = "*"
 flask-bootstrap = "*"
 flask-wtf = "*"
+flask-moment = "*"
+flask-script = "*"
+flask-migrate = "*"
+pymysql = "*"
 
 [dev-packages]
 
