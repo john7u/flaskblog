@@ -16,11 +16,13 @@ class Config:
 
     @staticmethod
     def init_app(app):
+        # init_app()方法是作者自定义的一个初始化方法
         pass
+
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    MAIL_SERVER = 'smtp.googlemail.com'
+    MAIL_SERVER = 'smtp.126.com'
     MAIL_PORT = 587
     MAIL_USE_TLS = True
     MAIL_USE_SSL = True

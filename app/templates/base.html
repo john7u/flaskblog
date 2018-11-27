@@ -35,6 +35,15 @@
             <ul class="nav navbar-nav">
                 <li><a href="/">Home</a></li>
             </ul>
+            <ul class="nav navbar-nav navbar-right">
+            <!--current_user是Flask_Login定义的，值是当前登陆的用户，若用户未登录，
+            则是一个匿名用户代理对象，is_authenticated将返回false-->
+                {% if current_user.is_authenticated %}
+                <li><a href="{{ url_for('auth.logout') }}">退出</a></li>
+                {% else %}
+                <li><a href="{{ url_for('auth.login') }}">登陆</a></li>
+                {% endif %}
+            </ul>
         </div>
     </div>
 </div>

@@ -22,7 +22,7 @@ manager.add_command('db', MigrateCommand)
 
 @manager.command
 def test():
-    """运行python manage.py test启动单元测试"""
+    # 运行python manage.py test启动单元测试
     import unittest
     tests = unittest.TestLoader().discover('tests')
     unittest.TextTestRunner(verbosity=2).run(tests)

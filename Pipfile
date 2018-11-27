@@ -12,6 +12,7 @@ flask-moment = "*"
 flask-script = "*"
 flask-migrate = "*"
 pymysql = "*"
+flask-login = "*"
 
 [dev-packages]
 
