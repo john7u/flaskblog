@@ -3,8 +3,9 @@
 from flask import render_template, redirect, request, url_for, flash
 from . import auth
 from ..models import User
-from .form import LoginForm
+from .form import LoginForm, RegistrationForm
 from flask_login import login_required, login_user, logout_user
+from .. import db
 
 
 # 登陆路由
@@ -30,3 +31,17 @@ def logout():
     logout_user()
     flash(u'你已退出登陆')
     return redirect(url_for('main.index'))
+
+
+# 注册页面
+@auth.route('/register', methods=['GET', 'POST'])
+def register():
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        user = User(email=form.email.data,
+                    username=form.username.data,
+                    password=form.password.data)
+        db.session.add(user)
+        flash('完成注册')
+        return redirect(url_for('.login'))
+    return render_template('auth/register.html', form=form)
