@@ -4,8 +4,10 @@ from flask import render_template, redirect, request, url_for, flash
 from . import auth
 from ..models import User
 from .form import LoginForm, RegistrationForm
-from flask_login import login_required, login_user, logout_user
+from flask_login import login_required, login_user, logout_user, current_user
 from .. import db
+from ..email import send_email
+import time
 
 
 # 登陆路由
@@ -43,6 +45,24 @@ def register():
                     password=form.password.data)
         db.session.add(user)
         db.session.commit()
-        flash('完成注册')
-        return redirect(url_for('.login'))
+        token = user.generate_confirmation_token()
+        send_email(user.email, '请确认您的账号', 'auth/email/confirm',
+                   user=user, token=token)
+        flash('已向您的邮箱:{email}发送了一封确认邮件'.format(email=user.email))
+        return redirect(url_for('.register'))
     return render_template('auth/register.html', form=form)
+
+
+@auth.route('/confirm/<token>')
+# @login_required
+def confirm(token):
+    if current_user.confirmed:
+        return redirect(url_for('main.index'))
+    elif current_user.confirm(token):
+        flash('已经确认您的账户，谢谢')
+        time.sleep(3)
+        login_user(current_user)
+        return redirect(url_for('main.index'))
+    else:
+        flash('确认连接无效或已过期')
+        return redirect(url_for('.confirm'))
