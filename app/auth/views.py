@@ -65,4 +65,4 @@ def confirm(token):
         return redirect(url_for('main.index'))
     else:
         flash('确认连接无效或已过期')
-        return redirect(url_for('.confirm'))
+        return redirect(url_for('.register'))
