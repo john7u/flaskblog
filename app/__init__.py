@@ -5,7 +5,7 @@ from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 from flask_mail import Mail
 from flask_sqlalchemy import SQLAlchemy
-import pymysql
+# import pymysql
 from config import config
 from flask_login import LoginManager
 
