@@ -42,6 +42,10 @@ class User(UserMixin, db.Model):
         s = Serializer(current_app.config['SECRET_KEY'], expiration)
         return s.dumps({'confirm': self.id}).decode('utf-8')
 
+    def generate_resetpswd_confirmation_token(self, expiration=3600):
+        s = Serializer(current_app.config['SECRET_KEY'] + 'resetpassword', expiration)
+        return s.dumps({'reset': self.id}).decode('utf-8')
+
     def confirm(self, token):
         s = Serializer(current_app.config['SECRET_KEY'])
         try:
@@ -52,6 +56,19 @@ class User(UserMixin, db.Model):
             return False
         self.confirmed = True
         db.session.add(self)
+        return True
+
+    def confirm_resetpasswd(self, token, new_password):
+        s = Serializer(current_app.config['SECRET_KEY'] + 'resetpassword')
+        try:
+            data = s.loads(token.encode('utf-8'))
+        except:
+            return False
+        user = User.query.get(data.get('reset'))
+        if user is None:
+            return False
+        user.password = new_password
+        db.session.add(user)
         return True
 
     def __repr__(self):

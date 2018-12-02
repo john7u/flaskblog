@@ -56,3 +56,19 @@ class UserModelTestCase(unittest.TestCase):
         db.session.commit()
         token = u.generate_confirmation_token()
         self.assertTrue(u.confirm(token))
+
+    def test_valid_reset_token(self):
+        u = User(password='cat')
+        db.session.add(u)
+        db.session.commit()
+        token = u.generate_resetpswd_confirmation_token()
+        self.assertTrue(u.confirm_resetpasswd(token, 'dog'))
+        self.assertTrue(u.verify_password('dog'))
+
+    def test_invalid_reset_token(self):
+        u = User(password='cat')
+        db.session.add(u)
+        db.session.commit()
+        token = u.generate_resetpswd_confirmation_token()
+        self.assertFalse(u.confirm_resetpasswd(token + 'a', 'horse'))
+        self.assertTrue(u.verify_password('cat'))

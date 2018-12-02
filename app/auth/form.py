@@ -33,11 +33,21 @@ class RegistrationForm(FlaskForm):
             raise ValidationError('该用户名已注册')
 
 
-class ResetPassword(FlaskForm):
-    old_password = StringField('请输入旧密码', validators=[DataRequired(), Length(3,16),
-                                                     EqualTo('old_password2', message='两次输入密码必须一致')])
-    old_password2 = StringField('请确认旧密码', validators=[DataRequired()])
-    new_password = StringField('请输入新密码', validators=[DataRequired(), Length(3,16),
-                                                     EqualTo('new_password2', message='两次输入密码必须一致')])
-    new_password2 = StringField('请确认新密码', validators=[DataRequired()])
-    submit = SubmitField('确认修改')
+class ChangePassword(FlaskForm):
+    old_password = PasswordField('请输入旧密码', validators=[DataRequired(), Length(3,16)])
+    new_password = PasswordField('请输入新密码', validators=[DataRequired(), Length(3,16),
+                                                     EqualTo('new_password2', message='两次输入密码不一致')])
+    new_password2 = PasswordField('请确认新密码', validators=[DataRequired()])
+    submit = SubmitField('提交修改')
+
+
+class BeforeResetpswd(FlaskForm):
+    email = StringField('请输入邮箱', validators=[DataRequired(), Length(1, 64), Email()])
+    submit = SubmitField('发送邮件')
+
+
+class AfterResetpswd(FlaskForm):
+    password = PasswordField('请输入新密码', validators=[DataRequired(), Length(3, 16),
+                                                   EqualTo('password2', message='两次输入密码不一致')])
+    password2 = PasswordField('请确认新密码', validators=[DataRequired()])
+    submit = SubmitField('确认重置')

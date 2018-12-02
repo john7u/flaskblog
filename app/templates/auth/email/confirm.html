@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <p>您好，{{ user.username }},</p>
-<p>Welcome to <b>Flasky</b>!</p>
-<p>To confirm your account please <a href="{{ url_for('auth.confirm', token=token, _external=True) }}">click here</a>.</p>
-<p>Alternatively, you can paste the following link in your browser's address bar:</p>
+<p>感谢注册<b>Flasky</b>!</p>
+<p>确认您的账户请点击<a href="{{ url_for('auth.confirm', token=token, _external=True) }}">这里</a>.</p>
+<p>或者，您可以将以下链接粘贴到浏览器的地址栏中:</p>
 <p>{{ url_for('auth.confirm', token=token, _external=True) }}</p>
-<p>Sincerely,</p>
-<p>The Flasky Team</p>
-<p><small>Note: replies to this email address are not monitored.</small></p>
+
+<p>来自Flasky</p>
+<p><small>Note：请勿回复此邮件，如果您有疑问，请联系admin@flasky.com</small></p>

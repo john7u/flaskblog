@@ -3,7 +3,7 @@
 from flask import render_template, redirect, request, url_for, flash
 from . import auth
 from ..models import User
-from .form import LoginForm, RegistrationForm, ResetPassword
+from .form import LoginForm, RegistrationForm, BeforeResetpswd, ChangePassword, AfterResetpswd
 from flask_login import login_required, login_user, logout_user, current_user
 from .. import db
 from .. import email
@@ -49,7 +49,7 @@ def register():
         email.send_email(user.email, '确认您的账号', 'auth/email/confirm',
                          user=user, token=token)
         flash('已向您的邮箱{email}发送一封确认账号邮件'.format(email=user.email))
-        return redirect(url_for('.login'))
+        return redirect(url_for('.register'))
     return render_template('auth/register.html', form=form)
 
 
@@ -97,21 +97,66 @@ def resend_confirmation():
     email.send_email(current_user.email, '确认您的账号', 'auth/email/confirm',
                      user=current_user, token=token)
     flash('已向您的邮箱{email}发送一封确认账号邮件'.format(email=current_user.email))
-    return redirect(request.args.get('next') or url_for('main.index'))
+    return redirect(url_for('main.index'))
 
 
-# 用户管理首页路由
-
-
-# 重置密码路由
-@auth.route('/resetpswd', methods=['GET', 'POST'])
+# 修改密码路由
+@auth.route('/changepswd', methods=['GET', 'POST'])
 @login_required
-def resetpswd():
-    form = ResetPassword()
+def changepswd():
+    form = ChangePassword()
     if form.validate_on_submit():
-        user = current_user(password=form.new_password.data)
-        db.session.add(user)
-        db.session.commit()
-        return redirect(request.args.get('next') or url_for('用户管理首页'))
-    return render_template('auth/resetpswd.html', form=form)
+        if current_user.verify_password(form.old_password.data):
+            current_user.password = form.new_password.data
+            db.session.add(current_user)
+            db.session.commit()
+            flash('成功修改密码')
+            return redirect(request.args.get('next') or url_for('main.index'))
+        else:
+            flash('原始密码错误')
+    return render_template('auth/usermanage/changepswd.html', form=form)
 
+
+# 重设密码路由（前）
+@auth.route('/resetpswd', methods=['GET', 'POST'])
+def before_resetpswd():
+    if not current_user.is_anonymous:
+        return redirect(url_for('main.index'))
+    form = BeforeResetpswd()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user:
+            token = user.generate_resetpswd_confirmation_token()
+            email.send_email(user.email, '重置您的密码', 'auth/email/resetpswd', user=user,
+                             token=token)
+            flash('已向您的邮箱{email}发送重置密码确认邮件'.format(email=user.email))
+        else:
+            flash('无此邮箱')
+        return redirect(url_for('auth.before_resetpswd'))
+    return render_template('auth/usermanage/resetpswd.html', form=form)
+
+
+# 重发重置密码邮件
+@auth.route('/resetpswd/resend')
+def resend_pswd_email():
+    token = current_user.generate_resetpswd_confirmation_token()
+    email.send_email(current_user.email, '重置您的密码', 'auth/email/resetpswd', user=current_user,
+                     token=token)
+    flash('已向您的邮箱{email}发送重置密码确认邮件'.format(email=current_user.email))
+    # return redirect(url_for('main.index'))
+
+
+# 重新设置密码路由
+@auth.route('/resetpswd/<token>', methods=['GET', 'POST'])
+def after_resetpswd(token):
+    if current_user.is_anonymous:
+        return redirect(url_for('main.index'))
+    form = AfterResetpswd()
+    if form.validate_on_submit():
+        if User.confirm_resetpasswd(token, form.password.data):
+            db.session.commit()
+            flash('已成功修改密码')
+            return redirect(url_for('.login'))
+        else:
+            return redirect(url_for('main.index'))
+    return render_template('auth/usermanage/resetpswd.html', form=form)
