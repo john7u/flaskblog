@@ -58,7 +58,8 @@ class User(UserMixin, db.Model):
         db.session.add(self)
         return True
 
-    def confirm_resetpasswd(self, token, new_password):
+    @staticmethod
+    def confirm_resetpasswd(token, new_password):
         s = Serializer(current_app.config['SECRET_KEY'] + 'resetpassword')
         try:
             data = s.loads(token.encode('utf-8'))

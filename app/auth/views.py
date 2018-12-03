@@ -149,7 +149,7 @@ def resend_pswd_email():
 # 重新设置密码路由
 @auth.route('/resetpswd/<token>', methods=['GET', 'POST'])
 def after_resetpswd(token):
-    if current_user.is_anonymous:
+    if not current_user.is_anonymous:
         return redirect(url_for('main.index'))
     form = AfterResetpswd()
     if form.validate_on_submit():
