@@ -51,3 +51,8 @@ class AfterResetpswd(FlaskForm):
                                                    EqualTo('password2', message='两次输入密码不一致')])
     password2 = PasswordField('请确认新密码', validators=[DataRequired()])
     submit = SubmitField('确认重置')
+
+
+class SetNewEmail(FlaskForm):
+    email = StringField('请输入新邮箱', validators=[DataRequired(), Length(1, 64), Email()])
+    submit = SubmitField('提交修改')

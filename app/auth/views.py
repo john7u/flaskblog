@@ -21,7 +21,7 @@ def login():
             """Flask_login会把用户访问的未授权url原地址保存在查询字符串的next参数中，
             这个参数可从request.args字典读取"""
             return redirect(request.args.get('next') or url_for('main.index'))
-        flash(u'账号或密码错误')
+        flash(u'账号或密码错误', 'warning')
     return render_template('auth/login.html', form=form)
 
 
@@ -31,7 +31,7 @@ def login():
 @login_required
 def logout():
     logout_user()
-    flash(u'你已退出登陆')
+    flash(u'你已退出登陆', 'info')
     return redirect(url_for('main.index'))
 
 
@@ -48,7 +48,7 @@ def register():
         token = user.generate_confirmation_token()
         email.send_email(user.email, '确认您的账号', 'auth/email/confirm',
                          user=user, token=token)
-        flash('已向您的邮箱{email}发送一封确认账号邮件'.format(email=user.email))
+        flash('已向您的邮箱{email}发送一封确认账号邮件'.format(email=user.email), 'success')
         return redirect(url_for('.register'))
     return render_template('auth/register.html', form=form)
 
@@ -61,12 +61,12 @@ def confirm(token):
         return redirect(url_for('main.index'))
     elif current_user.confirm(token):
         db.session.commit()
-        flash('感谢您的注册，已确认您的账号')
+        flash('感谢您的注册，已确认您的账号', 'success')
         # time.sleep(3)
         # login_user(current_user)
         return redirect(url_for('main.index'))
     else:
-        flash('认证链接无效或已过期')
+        flash('认证链接无效或已过期', 'danger')
         # 重定向到main蓝图是为了直接转到重发确认链接路由
         return redirect(url_for('main.index'))
 
@@ -96,7 +96,7 @@ def resend_confirmation():
     token = current_user.generate_confirmation_token()
     email.send_email(current_user.email, '确认您的账号', 'auth/email/confirm',
                      user=current_user, token=token)
-    flash('已向您的邮箱{email}发送一封确认账号邮件'.format(email=current_user.email))
+    flash('已向您的邮箱{email}发送一封确认账号邮件'.format(email=current_user.email), 'success')
     return redirect(url_for('main.index'))
 
 
@@ -110,10 +110,10 @@ def changepswd():
             current_user.password = form.new_password.data
             db.session.add(current_user)
             db.session.commit()
-            flash('成功修改密码')
+            flash('成功修改密码', 'success')
             return redirect(request.args.get('next') or url_for('main.index'))
         else:
-            flash('原始密码错误')
+            flash('原始密码错误', 'warning')
     return render_template('auth/usermanage/changepswd.html', form=form)
 
 
@@ -129,21 +129,11 @@ def before_resetpswd():
             token = user.generate_resetpswd_confirmation_token()
             email.send_email(user.email, '重置您的密码', 'auth/email/resetpswd', user=user,
                              token=token)
-            flash('已向您的邮箱{email}发送重置密码确认邮件'.format(email=user.email))
+            flash('已向您的邮箱{email}发送重置密码确认邮件'.format(email=user.email), 'success')
         else:
-            flash('无此邮箱')
+            flash('无此邮箱', 'danger')
         return redirect(url_for('auth.before_resetpswd'))
     return render_template('auth/usermanage/resetpswd.html', form=form)
-
-
-# 重发重置密码邮件
-@auth.route('/resetpswd/resend')
-def resend_pswd_email():
-    token = current_user.generate_resetpswd_confirmation_token()
-    email.send_email(current_user.email, '重置您的密码', 'auth/email/resetpswd', user=current_user,
-                     token=token)
-    flash('已向您的邮箱{email}发送重置密码确认邮件'.format(email=current_user.email))
-    # return redirect(url_for('main.index'))
 
 
 # 重新设置密码路由
@@ -155,8 +145,12 @@ def after_resetpswd(token):
     if form.validate_on_submit():
         if User.confirm_resetpasswd(token, form.password.data):
             db.session.commit()
-            flash('已成功修改密码')
+            flash('已成功修改密码', 'success')
             return redirect(url_for('.login'))
         else:
             return redirect(url_for('main.index'))
     return render_template('auth/usermanage/resetpswd.html', form=form)
+
+
+# 修改用户邮箱
+
