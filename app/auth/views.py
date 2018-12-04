@@ -160,7 +160,7 @@ def change_mail():
     form = ChangeMail()
     if form.validate_on_submit():
         if current_user.verify_password(form.password.data):
-            token = current_user.generate_changemail_confirmation_token(current_user.id, form.email.data)
+            token = current_user.generate_changemail_confirmation_token(form.email.data)
             email.send_email(current_user.email, '重置您的邮箱', 'auth/email/changemail', user=current_user,
                              token=token)
             flash('已向您的邮箱{email}发送重置邮箱确认邮件'.format(email=current_user.email), 'success')

@@ -46,10 +46,9 @@ class User(UserMixin, db.Model):
         s = Serializer(current_app.config['SECRET_KEY'] + 'resetpassword', expiration)
         return s.dumps({'reset': self.id}).decode('utf-8')
 
-    @staticmethod
-    def generate_changemail_confirmation_token(id, new_email, expiration=3600):
+    def generate_changemail_confirmation_token(self, new_email, expiration=3600):
         s = Serializer(current_app.config['SECRET_KEY'] + 'changemail', expiration)
-        return s.dumps({'confirm': id, 'email': new_email}).decode('utf-8')
+        return s.dumps({'confirm': self.id, 'email': new_email}).decode('utf-8')
 
     def confirm(self, token):
         s = Serializer(current_app.config['SECRET_KEY'])
@@ -77,22 +76,20 @@ class User(UserMixin, db.Model):
         db.session.add(user)
         return True
 
-    @staticmethod
-    def confirm_changemail(token):
+    def confirm_changemail(self, token):
         s = Serializer(current_app.config['SECRET_KEY'] + 'changemail')
         try:
             data = s.loads(token.encode('utf-8'))
         except:
             return False
-        user = User.query.get(data.get('confirm'))
-        if user is None:
+        if self.id != data.get('confirm'):
             return False
         if data.get('new_email') is None:
             return False
-        if User.query.filter_by(email=data.get('new_email')):
+        if User.query.filter_by(email=data.get('new_email')).first() is not None:
             return False
-        user.email = data.get('new_email')
-        db.session.add(user)
+        self.email = data.get('new_email')
+        db.session.add(self)
         return True
 
     def __repr__(self):
