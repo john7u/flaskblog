@@ -26,7 +26,7 @@ class RegistrationForm(FlaskForm):
 
     def validate_email(self, field):
         if User.query.filter_by(email=field.data).first():
-            raise ValidationError('该邮件已注册')
+            raise ValidationError('该邮箱已注册')
 
     def validate_username(self, field):
         if User.query.filter_by(username=field.data).first():
@@ -53,6 +53,11 @@ class AfterResetpswd(FlaskForm):
     submit = SubmitField('确认重置')
 
 
-class SetNewEmail(FlaskForm):
+class ChangeMail(FlaskForm):
     email = StringField('请输入新邮箱', validators=[DataRequired(), Length(1, 64), Email()])
+    password = PasswordField('请输入密码', validators=[DataRequired(), Length(3, 16)])
     submit = SubmitField('提交修改')
+
+    def validate_email(self, field):
+        if User.query.filter_by(email=field.data).first():
+            raise ValidationError('该邮箱已注册，换一个试试')

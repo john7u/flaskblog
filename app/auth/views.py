@@ -3,7 +3,8 @@
 from flask import render_template, redirect, request, url_for, flash
 from . import auth
 from ..models import User
-from .form import LoginForm, RegistrationForm, BeforeResetpswd, ChangePassword, AfterResetpswd
+from .form import LoginForm, RegistrationForm, \
+    BeforeResetpswd, ChangePassword, AfterResetpswd, ChangeMail
 from flask_login import login_required, login_user, logout_user, current_user
 from .. import db
 from .. import email
@@ -136,7 +137,7 @@ def before_resetpswd():
     return render_template('auth/usermanage/resetpswd.html', form=form)
 
 
-# 重新设置密码路由
+# 重设密码路由（后）
 @auth.route('/resetpswd/<token>', methods=['GET', 'POST'])
 def after_resetpswd(token):
     if not current_user.is_anonymous:
@@ -152,5 +153,32 @@ def after_resetpswd(token):
     return render_template('auth/usermanage/resetpswd.html', form=form)
 
 
-# 修改用户邮箱
+# 修改用户邮箱（前）
+@auth.route('/changemail', methods=['GET', 'POST'])
+@login_required
+def change_mail():
+    form = ChangeMail()
+    if form.validate_on_submit():
+        if current_user.verify_password(form.password.data):
+            token = current_user.generate_changemail_confirmation_token(current_user.id, form.email.data)
+            email.send_email(current_user.email, '重置您的邮箱', 'auth/email/changemail', user=current_user,
+                             token=token)
+            flash('已向您的邮箱{email}发送重置邮箱确认邮件'.format(email=current_user.email), 'success')
+            return redirect(url_for('auth.change_mail'))
+        else:
+            flash('密码错误', 'warning')
+    return render_template('auth/usermanage/changemail.html', form=form)
 
+
+# 修改用户邮箱（后）
+@auth.route('/changemail/<token>', methods=['GET', 'POST'])
+@login_required
+def change_mail_done(token):
+    form = ChangeMail()
+    if current_user.confirm_changemail(token):
+        db.session.commit()
+        flash('成功修改邮箱', 'success')
+        return redirect(url_for('main.index'))
+    else:
+        flash('认证失败或链接已过期', 'danger')
+    return render_template('auth/usermanage/changemail.html', form=form)
