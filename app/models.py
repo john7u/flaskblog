@@ -12,10 +12,42 @@ class Role(db.Model):
     __tablename__ = 'roles'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True)
-    users = db.relationship('User', backref='role')  # backref向User模型中添加一个role属性
+    default = db.Column(db.Boolean, default=False, index=True)
+    permissions = db.Column(db.Integer)
+    users = db.relationship('User', backref='role', lazy='dynamic')  # backref向User模型中添加一个role属性
+
+    @staticmethod
+    def insert_roles():
+        """这个方法可以将角色添加到数据库，替代手动添加"""
+        roles = {
+            'User': (Permission.FOLLOW |
+                     Permission.COMMENT |
+                     Permission.WRITE_ARTICLES, True),
+            'Moderator': (Permission.FOLLOW |
+                          Permission.COMMENT |
+                          Permission.WRITE_ARTICLES |
+                          Permission.MODERATE_COMMENTS, False),
+            'Administrator': (0xff, False)
+        }
+        for r in roles:
+            role = Role.query.filter_by(name=r).first()
+            if role is None:
+                role = Role(name=r)
+            role.permissions = roles[r][0]
+            role.default = roles[r][1]
+            db.session.add(role)
+        db.session.commit()
 
     def __repr__(self):
         return '<Role %r>' % self.name
+
+
+class Permission:
+    FOLLOW = 0x01   # 关注用户
+    COMMENT = 0x02  # 在他人文章发表评论
+    WRITE_ARTICLES = 0x04   # 写文章
+    MODERATE_COMMENTS = 0x00    # 管理他人发表的评论
+    ADMINISTER = 0x80   # 管理员权限
 
 
 class User(UserMixin, db.Model):
@@ -26,6 +58,18 @@ class User(UserMixin, db.Model):
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
     password_hash = db.Column(db.String(128))
     confirmed = db.Column(db.Boolean, default=False)
+
+    def __init__(self, **kwargs):
+        super(User, self).__init__(**kwargs)
+        """Python与其他语言不同，子类的初始化不会自动地调用父类的初始化。
+        使用内置的super可以根据MRO实现父类的代理，在这里就是调用了父类的
+        __init__进行初始化。如果不显式地调用该方法，则父类的属性在子类的
+        实例中就会缺失。"""
+        if self.role is None:
+            if self.email == current_app.config['FLASKY_ADMIN']:
+                self.role = Role.query.filter_by(permission=0xff).first()
+            if self.role is None:
+                self.role = Role.query.filter_by(default=True).first()
 
     @property
     def password(self):
