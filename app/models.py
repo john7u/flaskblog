@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from . import db
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import UserMixin
+from flask_login import UserMixin, AnonymousUserMixin
 from . import login_manager
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask import current_app
@@ -14,7 +14,9 @@ class Role(db.Model):
     name = db.Column(db.String(64), unique=True)
     default = db.Column(db.Boolean, default=False, index=True)
     permissions = db.Column(db.Integer)
-    users = db.relationship('User', backref='role', lazy='dynamic')  # backref向User模型中添加一个role属性
+    users = db.relationship('User', backref='role', lazy='dynamic')
+    # backref向User模型中添加一个role属性,这一属性可替代role_id访问Role模型，此时获取的是模型对象，而不是外键的值
+
 
     @staticmethod
     def insert_roles():
@@ -67,9 +69,15 @@ class User(UserMixin, db.Model):
         实例中就会缺失。"""
         if self.role is None:
             if self.email == current_app.config['FLASKY_ADMIN']:
-                self.role = Role.query.filter_by(permission=0xff).first()
+                self.role = Role.query.filter_by(permissions=0xff).first()
             if self.role is None:
                 self.role = Role.query.filter_by(default=True).first()
+
+    def can(self, permissions):
+        return self.role is not None and (self.role.permissions & permissions) == permissions
+
+    def is_administrator(self):
+        return self.can(Permission.ADMINISTER)
 
     @property
     def password(self):
@@ -138,6 +146,17 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return '<User %r>' % self.username  # print类实例将打印用户名
+
+
+class AnonymousUser(AnonymousUserMixin):
+    def can(self, permissions):
+        return False
+
+    def is_administrator(self):
+        return False
+
+
+login_manager.anonymous_user = AnonymousUser
 
 
 # flask_login要求实现一个回调函数，接收Unicode字符串标书的用户标识符，
