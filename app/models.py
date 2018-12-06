@@ -6,6 +6,7 @@ from flask_login import UserMixin, AnonymousUserMixin
 from . import login_manager
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask import current_app
+from datetime import datetime
 
 
 class Role(db.Model):
@@ -16,7 +17,6 @@ class Role(db.Model):
     permissions = db.Column(db.Integer)
     users = db.relationship('User', backref='role', lazy='dynamic')
     # backref向User模型中添加一个role属性,这一属性可替代role_id访问Role模型，此时获取的是模型对象，而不是外键的值
-
 
     @staticmethod
     def insert_roles():
@@ -60,6 +60,11 @@ class User(UserMixin, db.Model):
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
     password_hash = db.Column(db.String(128))
     confirmed = db.Column(db.Boolean, default=False)
+    name = db.Column(db.String(64))     # 真实姓名
+    location = db.Column(db.String(64))     # 所在地
+    about_me = db.Column(db.TEXT())     # 自我介绍
+    member_since = db.Column(db.DateTime(), default=datetime.utcnow)    # 注册日期，default参数可以接收函数为默认值
+    last_seen = db.Column(db.DateTime(), default=datetime.utcnow)       # 最后访问日期
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -143,6 +148,10 @@ class User(UserMixin, db.Model):
         self.email = data.get('new_email')
         db.session.add(self)
         return True
+
+    def ping(self):
+        self.last_seen = datetime.utcnow()
+        db.session.add(self)
 
     def __repr__(self):
         return '<User %r>' % self.username  # print类实例将打印用户名
