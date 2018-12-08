@@ -2,10 +2,11 @@
 # -*- coding: utf-8 -*-
 import os
 from datetime import datetime
-from flask import make_response, render_template, session, url_for, redirect, flash
+from flask import make_response, render_template, session, url_for, redirect, flash, abort
+from flask_login import login_required, current_user
 
 from . import main
-from .forms import NameForm
+from .forms import NameForm, EditProfileForm
 from .. import db
 from ..models import User
 from ..email import send_email
@@ -37,7 +38,34 @@ def index():
                            known=session.get('known', False))
 
 
-@main.route('/user/<name>')
-def user(name):
-    response = make_response(render_template('user.html', name=name))
-    return response
+# @main.route('/user/<name>')
+# def user(name):
+#     response = make_response(render_template('user.html', name=name))
+#     return response
+
+
+# 用户资料页面
+@main.route('/user/<username>')
+def user(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    # if user is None:
+    #     abort(404)
+    return render_template('user.html', user=user)
+
+
+# 编辑用户资料页面
+@main.route('/edit-profile', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    form = EditProfileForm()
+    if form.validate_on_submit():
+        current_user.name = form.name.data
+        current_user.location = form.location.data
+        current_user.about_me = form.about_me.data
+        db.session.add(current_user)
+        flash('您的资料已更新')
+        return redirect(url_for('.user', username=current_user.username))
+    form.name.data = current_user.name
+    form.location.data = current_user.location
+    form.about_me.data = current_user.about_me
+    return render_template('edit_profile.html', form=form)
