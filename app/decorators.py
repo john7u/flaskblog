@@ -3,6 +3,7 @@
 from functools import wraps
 from flask import abort
 from flask_login import current_user
+from .models import Permission
 
 """这是自定义装饰器，用来检查用户权限"""
 
