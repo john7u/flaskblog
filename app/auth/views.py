@@ -72,7 +72,8 @@ def confirm(token):
         return redirect(url_for('main.index'))
 
 
-# 全局使用钩子过滤未确认用户,before_app_request代表访问任何页面之前使用钩子
+# 全局使用钩子过滤未确认用户,对蓝本来说，before_request钩子只能应用到属于蓝本的请求上
+# before_app_request代表访问任何页面之前使用钩子
 @auth.before_app_request
 def before_request():
     if current_user.is_authenticated:

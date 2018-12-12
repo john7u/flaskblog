@@ -7,8 +7,9 @@
 {{ super() }}
 <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}"
       type="image/x-icon" xmlns="http://www.w3.org/1999/html">
-<link rel="icon" href="{{ url_for('static', filename='favicon.ico')}}"
+<link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}"
       type="image/x-icon">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
 {% endblock %}
 
 {% block scripts %}
@@ -42,7 +43,10 @@
             则是一个匿名用户代理对象，is_authenticated将返回false-->
                 {% if current_user.is_authenticated %}
                 <li class="dropdown">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">账户<b class="caret"></b></a>
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                        <img src="{{  current_user.gravatar(size=18) }}">
+                        账户<b class="caret"></b>
+                    </a>
                     <ul class="dropdown-menu">
                         <li><a href="{{ url_for('auth.changepswd') }}">修改密码</a></li>
                         <li><a href="{{ url_for('auth.change_mail') }}">修改邮箱</a></li>

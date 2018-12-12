@@ -5,8 +5,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin, AnonymousUserMixin
 from . import login_manager
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-from flask import current_app
+from flask import current_app, request
 from datetime import datetime
+import hashlib
 
 
 class Role(db.Model):
@@ -65,6 +66,7 @@ class User(UserMixin, db.Model):
     about_me = db.Column(db.TEXT())     # 自我介绍
     member_since = db.Column(db.DateTime(), default=datetime.utcnow)    # 注册日期，default参数可以接收函数为默认值
     last_seen = db.Column(db.DateTime(), default=datetime.utcnow)       # 最后访问日期
+    avatar_hash = db.Column(db.String(32), unique=True, index=True)         # 储存头像MD5哈希值
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -77,6 +79,8 @@ class User(UserMixin, db.Model):
                 self.role = Role.query.filter_by(permissions=0xff).first()
             if self.role is None:
                 self.role = Role.query.filter_by(default=True).first()
+        if self.email is not None and self.avatar_hash is None:
+            self.avatar_hash = self.gravatar_hash()
 
     def can(self, permissions):
         return self.role is not None and (self.role.permissions & permissions) == permissions
@@ -105,7 +109,7 @@ class User(UserMixin, db.Model):
 
     def generate_changemail_confirmation_token(self, new_email, expiration=3600):
         s = Serializer(current_app.config['SECRET_KEY'] + 'changemail', expiration)
-        return s.dumps({'confirm': self.id, 'email': new_email}).decode('utf-8')
+        return s.dumps({'confirm': self.id, 'new_email': new_email}).decode('utf-8')
 
     def confirm(self, token):
         s = Serializer(current_app.config['SECRET_KEY'])
@@ -146,6 +150,7 @@ class User(UserMixin, db.Model):
         if User.query.filter_by(email=data.get('new_email')).first() is not None:
             return False
         self.email = data.get('new_email')
+        self.avatar_hash = hashlib.md5(self.email.encode('utf-8')).hexdigest() or self.gravatar_hash()
         db.session.add(self)
         return True
 
@@ -155,6 +160,20 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return '<User %r>' % self.username  # print类实例将打印用户名
+
+    # 生成用户头像使用的邮件地址MD5
+    def gravatar_hash(self):
+        return hashlib.md5(self.email.encode('utf-8')).hexdigest()
+
+    # 用户头像方法，使用gravatar.com头像服务
+    def gravatar(self, size=100, default='identicon', rating='g'):
+        if request.is_secure:
+            url = 'https://secure.gravatar.com/avatar'
+        else:
+            url = 'http://www.gravatar.com/avatar'
+        hash = self.avatar_hash or self.gravatar_hash()
+        return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(url=url, hash=hash, size=size,
+                                                                     default=default, rating=rating)
 
 
 class AnonymousUser(AnonymousUserMixin):
