@@ -6,37 +6,22 @@ from flask import make_response, render_template, session, url_for, redirect, fl
 from flask_login import login_required, current_user
 
 from . import main
-from .forms import NameForm, EditProfileForm, EditProfileAdminForm
+from .forms import NameForm, EditProfileForm, EditProfileAdminForm, PostForm
 from .. import db
-from ..models import User, Role
+from ..models import User, Role, Permission, Post
 from ..email import send_email
 from ..decorators import admin_required
 
 
 @main.route('/', methods=['GET', 'POST'])
 def index():
-    form = NameForm()
-    if form.validate_on_submit():
-        if form.name.data == form.name_v.data:
-            user = User.query.filter_by(username=form.name.data).first()
-            if user is None:
-                user = User(username=form.name.data)
-                db.session.add(user)
-                session['known'] = False
-                if os.environ.get('FLASKY_ADMIN'):
-                    send_email(os.environ.get('FLASKY_ADMIN'), '你有一个新用户', 'mail/new_user', user=user)
-            else:
-                session['known'] = True
-            flash(u'欢迎回来,{}'.format(form.name.data), 'success')
-            session['name'] = form.name.data
-        else:
-            flash(u'输入的名字不一致', 'danger')
-            session['name'] = '陌生人'
-        form.name.data = ''
-        form.name_v.data = ''
+    form = PostForm()
+    if current_user.can(Permission.WRITE_ARTICLES) and form.validate_on_submit():
+        post = Post(body=form.body.data, author=current_user._get_current_object())
+        db.session.add(post)
         return redirect(url_for('.index'))
-    return render_template('index.html', current_time=datetime.utcnow(), form=form, name=session.get('name'),
-                           known=session.get('known', False))
+    posts = Post.query.filter_by(Post.timestap.desc()).all()
+    return render_template('index.html', form=form, posts=posts)
 
 
 # @main.route('/user/<name>')
@@ -51,7 +36,8 @@ def user(username):
     user = User.query.filter_by(username=username).first_or_404()
     # if user is None:
     #     abort(404)
-    return render_template('user.html', user=user)
+    posts = user.posts.order_by(Post.timestamp.desc()).all()
+    return render_template('user.html', user=user, posts=posts)
 
 
 # 编辑用户资料页面
