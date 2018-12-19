@@ -227,8 +227,9 @@ class Post(db.Model):
         seed()
         user_count = User.query.count()
         for i in range(count):
+            # offset是跳过几次查询
             u = User.query.offset(randint(0, user_count - 1)).first()
-            p = Post(body=forgery_py.lorem_ipsum.sentence(randint(1, 3)),
+            p = Post(body=forgery_py.lorem_ipsum.sentences(randint(1, 3)),
                      timestamp=forgery_py.date.date(True),
                      author=u)
             db.session.add(p)
