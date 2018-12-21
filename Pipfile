@@ -13,6 +13,9 @@ flask-script = "*"
 flask-migrate = "*"
 pymysql = "*"
 flask-login = "*"
+flask-pagedown = "*"
+markdown = "*"
+bleach = "*"
 
 [dev-packages]
 forgerypy = "*"
